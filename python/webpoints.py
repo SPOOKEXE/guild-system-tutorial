@@ -2,6 +2,7 @@
 import uvicorn
 import asyncio
 
+from typing import Union
 from fastapi import FastAPI, Body
 from guilds import InternalGuildsAPI, DEFAULT_GUILD_AUDIT_LOG_LIMIT, DEFAULT_GUILD_CHAT_MESSAGE_LIMIT
 
@@ -26,13 +27,13 @@ async def IsGuildNameAvailable(
 @guilds_api.post('/get-guild-info-from-guild-id', summary='GetGuildInfoFromGuildId', tags=['guild-core'])
 async def GetGuildInfoFromGuildId(
 	guild_id : int = Body(None, embed=True)
-) -> dict | None:
+) -> Union[dict, None]:
 	return await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
 
 @guilds_api.post('/get-guild-info-from-user-id', summary='GetGuildInfoFromGuildId', tags=['guild-core'])
 async def GetGuildInfoFromUserId(
 	user_id : int = Body(None, embed=True)
-) -> dict | None:
+) -> Union[dict, None]:
 	return await InternalGuildsAPI.GetGuildInfoFromUserId(user_id)
 
 @guilds_api.post('/update-guild-display-info', summary='UpdateGuildDisplayInfo', tags=['guild-core'])
@@ -42,7 +43,7 @@ async def UpdateGuildDisplayInfo(
 	description : str = Body(None, embed=True),
 	accessibility : int = Body(None, embed=True),
 	emblem : int = Body(None, embed=True)
-) -> dict | None:
+) -> Union[dict, None]:
 	return await InternalGuildsAPI.UpdateGuildDisplayInfo(guild_id, user_id, description, accessibility, emblem)
 
 @guilds_api.post('/create-guild', summary='CreateGuild', tags=['guild-core'])
@@ -51,7 +52,7 @@ async def CreateGuild(
 	name : str = Body(None, embed=True),
 	description : str = Body(None, embed=True),
 	emblem : int = Body(None, embed=True)
-) -> None:
+) -> Union[dict, None]:
 	return await InternalGuildsAPI.GetGuildInvites(user_id, name, description, emblem)
 
 @guilds_api.post('/get-guild-invites', summary='GetGuildInvites', tags=['guild-core'])
@@ -212,6 +213,18 @@ async def GetGuildAuditLogs(
 	limit : int = Body(DEFAULT_GUILD_AUDIT_LOG_LIMIT, embed=True)
 ) -> None:
 	return await InternalGuildsAPI.GetGuildAuditLogs(guild_id, user_id, offset, limit)
+
+@guilds_api.post('/get-full-guild-info-from-guild-id', summary='GetFullGuildInfoFromGuildId', tags=['guild-core'])
+async def GetFullGuildInfoFromGuildId( guild_id : int, user_id : int ) -> Union[dict, None]:
+	return await InternalGuildsAPI.GetFullGuildInfoFromGuildId(guild_id, user_id)
+
+@guilds_api.post('/get-full-guild-info-from-user-id', summary='GetFullGuildInfoFromUserId', tags=['guild-core'])
+async def GetFullGuildInfoFromUserId( guild_id : int, user_id : int ) -> Union[dict, None]:
+	return await InternalGuildsAPI.GetFullGuildInfoFromUserId(guild_id, user_id)
+
+@guilds_api.post('/get-guild-members', summary='GetGuildMembers', tags=['guild-core'])
+async def GetGuildMembers( guild_id : int ) -> Union[list[dict], None]:
+	return await InternalGuildsAPI.GetGuildMembers(guild_id)
 
 async def main( host : str = '0.0.0.0', port : int = 5100 ) -> None:
 	await host_fastapp(guilds_api, host, port)
