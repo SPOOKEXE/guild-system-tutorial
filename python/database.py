@@ -12,7 +12,7 @@ import asyncio
 class BaseDatabase(Database):
 
 	async def start( self : Database ) -> None:
-		print(f'Connecting to SQLITE Database: {self.filename}')
+		print(f'Connecting to SQLite Database: {self.filename}')
 		await self.connect()
 
 	def __init__( self, filename : str, *args, **kwargs ) -> BaseDatabase:
