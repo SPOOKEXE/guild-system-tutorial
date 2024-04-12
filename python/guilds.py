@@ -22,7 +22,10 @@ class InternalGuildsAPI:
 		constructors = [
 			"CREATE TABLE IF NOT EXISTS master (guild_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT NOT NULL, accessibility INTEGER DEFAULT 0, emblem INTEGER NOT NULL, owner_id INTEGER NOT NULL, default_rank_id INTEGER DEFAULT -1, total_members INTEGER DEFAULT 1, total_online INTEGER DEFAULT 0, creation INTEGER NOT NULL);",
 			"CREATE TABLE IF NOT EXISTS members (user_id INTEGER PRIMARY KEY UNIQUE, guild_id INTEGER NOT NULL, rank_id INTEGER DEFAULT -1, timestamp INTEGER NOT NULL);",
-			"CREATE TABLE IF NOT EXISTS ranks (rank_id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id INTEGER NOT NULL, name TEXT NOT NULL, permissions TEXT NOT NULL);"
+			"CREATE TABLE IF NOT EXISTS ranks (rank_id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id INTEGER NOT NULL, name TEXT NOT NULL, permissions TEXT NOT NULL);",
+			"CREATE TABLE IF NOT EXISTS banned (id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id INTEGER, banned_json TEXT)",
+			"CREATE TABLE IF NOT EXISTS guild_chat (id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id INTEGER, user_id INTEGER, message TEXT, timestamp INTEGER, deleted INTEGER)",
+			"CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id INTEGER, user_id INTEGER, rank_id INTEGER, timestamp INTEGER, action INTEGER, args TEXT)"
 		]
 		await DatabaseAPI.register_database(InternalGuildsAPI.DATABASE_NAME, constructors)
 
@@ -197,10 +200,6 @@ class InternalGuildsAPI:
 		raise NotImplementedError
 
 async def test() -> None:
-	'''
-	- table for guild chat
-	- table for guild audit logs
-	'''
 
 	await InternalGuildsAPI.initialize()
 
