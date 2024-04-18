@@ -45,14 +45,18 @@ async def UpdateGuildDisplayInfo(
 ) -> Union[dict, None]:
 	return await InternalGuildsAPI.UpdateGuildDisplayInfo(guild_id, description, accessibility, emblem)
 
-@guilds_api.post('/create-guild', summary='CreateGuild', tags=['guild-core'])
-async def CreateGuild(
-	user_id : int = Body(None, embed=True),
-	name : str = Body(None, embed=True),
-	description : str = Body(None, embed=True),
-	emblem : int = Body(None, embed=True)
+@guilds_api.post('/get-guild-rank-by-id', summary='GetGuildRankById', tags=['guild-core'])
+async def GetGuildRankById(
+	rank_id : int = Body(None, embed=True)
 ) -> Union[dict, None]:
-	return await InternalGuildsAPI.CreateGuild(user_id, name, description, emblem)
+	return await InternalGuildsAPI.GetGuildRankById(rank_id)
+
+@guilds_api.post('/add-user-id-to-guild', summary='AddUserIdToGuild', tags=['guild-core'])
+async def AddUserIdToGuild(
+	guild_id : int = Body(None, embed=True),
+	user_id : int = Body(None, embed=True)
+) -> bool:
+	return await InternalGuildsAPI.AddUserIdToGuild(guild_id, user_id)
 
 @guilds_api.post('/set-user-id-rank-in-guild', summary='SetUserIdRankInGuild', tags=['guild-core'])
 async def SetUserIdRankInGuild(
@@ -104,6 +108,13 @@ async def DeleteGuild(
 	guild_id : int = Body(None, embed=True),
 ) -> bool:
 	return await InternalGuildsAPI.DeleteGuild(guild_id)
+
+@guilds_api.post('/is-user-in-guild-of-id', summary='IsUserInGuildOfId', tags=['guild-core'])
+async def IsUserInGuildOfId(
+	guild_id : int = Body(None, embed=True),
+	user_id : int = Body(None, embed=True),
+) -> bool:
+	return await InternalGuildsAPI.IsUserInGuildOfId(guild_id, user_id)
 
 @guilds_api.post('/transfer-guild-ownership', summary='TransferGuildOwnership', tags=['guild-core'])
 async def TransferGuildOwnership(
@@ -167,7 +178,7 @@ async def CreateGuildAuditLog(
 	guild_id : int = Body(None, embed=True),
 	user_id : int = Body(None, embed=True),
 	action : str = Body(None, embed=True),
-	args : list = Body(list, embed=True),
+	args : list = Body(list(), embed=True),
 ) -> Union[dict, None]:
 	return await InternalGuildsAPI.CreateGuildAuditLog(guild_id, user_id, action, args)
 
@@ -225,6 +236,15 @@ async def GetCreatedGuildsFull(
 	limit : int = Body(DEFAULT_GUILD_CHAT_MESSAGE_LIMIT, embed=True)
 ) -> list[dict]:
 	return await InternalGuildsAPI.GetCreatedGuildsFull(offset=offset, limit=limit)
+
+@guilds_api.post('/create-guild', summary='CreateGuild', tags=['guild-core'])
+async def CreateGuild(
+	user_id : int = Body(None, embed=True),
+	name : str = Body(None, embed=True),
+	description : str = Body(None, embed=True),
+	emblem : int = Body(None, embed=True)
+) -> Union[dict, None]:
+	return await InternalGuildsAPI.CreateGuild(user_id, name, description, emblem)
 
 async def main( host : str = '0.0.0.0', port : int = 5100 ) -> None:
 	await host_fastapp(guilds_api, host, port)

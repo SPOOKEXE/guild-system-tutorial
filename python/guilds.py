@@ -101,45 +101,59 @@ class InternalGuildsAPI:
 		accessibility : int,
 		emblem : int
 	) -> Union[dict, None]:
-		raise NotImplementedError
-		# guild_exists = await self.does_guild_exist( guild_id )
-		# if guild_exists is False:
-		# 	return False
-		# query = 'UPDATE master SET description=:description, emblem=:emblem, accessibility=:accessibility WHERE id=:guild_id'
-		# data = { "guild_id" : guild_id, "description" : description, "emblem" : emblem, "accessibility" : accessibility }
-		# await self.database_api.execute(self.main_database_name, query, data)
-		# return True
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
+		if guild_data is None: return None
+		query = 'UPDATE master SET description=:description, emblem=:emblem, accessibility=:accessibility WHERE guild_id=:guild_id RETURNING *'
+		data = { "guild_id" : guild_id, "description" : description, "emblem" : emblem, "accessibility" : accessibility }
+		return await DatabaseAPI.execute_and_return(InternalGuildsAPI.DATABASE_NAME, query, data)
+
+	async def AddUserIdToGuild(
+		guild_id : int,
+		user_id : int
+	) -> bool:
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromUserId(user_id)
+		if guild_data is not None: return False
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
+		# insert into memberz
+		query : str = 'INSERT INTO members (user_id, guild_id, rank_id, timestamp) VALUES (:user_id, :guild_id, :rank_id, :timestamp);'
+		data = {"guild_id" : guild_id, "user_id" : user_id, "rank_id" : guild_data['default_rank_id'], 'timestamp' : get_time() }
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		await InternalGuildsAPI.IncrementGuildPlayerCount(guild_id, 1)
+		return True
 
 	async def SetUserIdRankInGuild(
 		guild_id : int,
 		target_id : int,
 		rank_id : int
 	) -> bool:
-		raise NotImplementedError
-		# # check if guild and rank exists
-		# guild_data = await self.get_guild_info_by_id( guild_id )
-		# if guild_data is None: return False
-		# if guild_data["owner_id"] == user_id: return False # owner can't change role
-		# rank_exists = await self.get_rank_by_id(rank_id)
-		# if rank_exists is None: return False
-		# # update their rank
-		# query = "UPDATE users SET rank=:rank WHERE user_id=:user_id AND guild_id=:guild_id"
-		# data = {"guild_id" : guild_id, "user_id" : user_id, "rank" : rank_id }
-		# await self.database_api.execute(self.main_database_name, query, data)
-		# return True
+		rank_data = await InternalGuildsAPI.GetGuildRankById(rank_id)
+		if rank_data is None: return False
+		if rank_data['guild_id'] != guild_id: return False
+
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
+		if guild_data is None: return False
+		if guild_data["owner_id"] == target_id: return False # owner can't change role
+
+		query = "UPDATE members SET rank_id=:rank_id WHERE user_id=:user_id AND guild_id=:guild_id"
+		data = {"guild_id" : guild_id, "user_id" : target_id, "rank_id" : rank_id }
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		return True
 
 	async def ChangeRankPermissionsInGuild(
 		guild_id : int,
 		rank_id : int,
 		permissions : dict
 	) -> bool:
-		raise NotImplementedError
-		# doesExist = await self.does_guild_exist( guild_id )
-		# if doesExist is False: return False
-		# query = 'UPDATE ranks SET permissions_json=:permissions WHERE id=:rank_id AND guild_id=:guild_id'
-		# data = { "guild_id" : guild_id, "rank_id" : rank_id, "permissions" : json.dumps(permissions, separators=(",", ":")) }
-		# await self.database_api.execute(self.main_database_name, query, data)
-		# return True
+		is_valid = await InternalGuildsAPI.IsRankPermissionsValid(permissions)
+		if is_valid is False: return False
+
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
+		if guild_data is None: return False
+
+		query = 'UPDATE ranks SET permissions=:permissions WHERE rank_id=:rank_id AND guild_id=:guild_id'
+		data = { "guild_id" : guild_id, "rank_id" : rank_id, "permissions" : json.dumps(permissions, separators=(",", ":")) }
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		return True
 
 	async def CreateRankInGuild(
 		guild_id : int,
@@ -159,50 +173,48 @@ class InternalGuildsAPI:
 		guild_id : int,
 		rank_id : int
 	) -> bool:
-		raise NotImplementedError
-		# # check if guild exists
-		# guild_data : dict = await self.get_guild_info_by_id( guild_id )
-		# if guild_data is None: return False
+		rank_data = await InternalGuildsAPI.GetGuildRankById(rank_id)
+		if rank_data is None: return False
+		if rank_data["protected"] == 1: return False
+		if rank_data["guild_id"] != guild_id: return False
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
+		if guild_data is None: return False
+		# move players out of rank to the default rank
+		default_id : int = guild_data["default_rank_id"]
+		query = "UPDATE users SET rank_id=:default_id WHERE rank_id=:rank_id AND guild_id=:guild_id"
+		data = {"guild_id" : guild_id, "rank_id" : rank_id, "default_id" : default_id}
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		# delete rank
+		query = "DELETE FROM ranks WHERE rank_id=:rank_id AND guild_id=:guild_id"
+		data = {"guild_id" : guild_id, "rank_id" : rank_id}
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		return True
 
-		# # check if rank exists
-		# rank_data : dict = await self.get_rank_by_id( rank_id )
-		# if rank_data is None: return False
-
-		# if rank_data["guild_id"] != guild_id: return False
-
-		# # check if rank is protected
-		# protected_int = rank_data["protected"]
-		# is_protected = (protected_int==1)
-		# if is_protected is True: return False
-
-		# # move players out of rank to the default rank
-		# default_id : int = guild_data["default_rank"]
-		# query = "UPDATE users SET rank=:default_id WHERE rank=:rank_id AND guild_id=:guild_id"
-		# data = {"guild_id" : guild_id, "rank_id" : rank_id, "default_id" : default_id}
-		# await self.database_api.execute(self.main_database_name, query, data)
-
-		# # delete rank
-		# query = "DELETE FROM ranks WHERE id=:rank_id AND guild_id=:guild_id"
-		# data = {"guild_id" : guild_id, "rank_id" : rank_id}
-		# await self.database_api.execute(self.main_database_name, query, data)
-		# return True
+	async def GetGuildRankById(
+		rank_id : int
+	) -> Union[dict, None]:
+		query = 'SELECT * FROM ranks WHERE rank_id=:rank_id'
+		data = {'rank_id' : rank_id}
+		return await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 
 	async def SetDefaultRankInGuild(
 		guild_id : int,
 		rank_id : int
 	) -> bool:
-		raise NotImplementedError
-		# guild_data = await self.get_guild_info_by_id(guild_id)
-		# if guild_data is None: return False
-		# rank_data = await self.get_rank_by_id( rank_id )
-		# if rank_data is None: return False
-		# if rank_data["guild_id"] != guild_id: return False
-		# if rank_id == guild_data["default_rank"]: return True
-		# if rank_id == guild_data["owner_rank"]: return False
-		# query = "UPDATE master SET default_rank=:default_id WHERE id=:guild_id"
-		# data = {"guild_id" : guild_id, "default_id" : rank_id}
-		# await self.database_api.execute(self.main_database_name, query, data)
-		# return True
+		rank_data = await InternalGuildsAPI.GetGuildRankById( rank_id )
+		if rank_data is None: return False
+		if rank_data["guild_id"] != guild_id: return False
+
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
+		if guild_data is None: return False
+
+		if rank_id == guild_data["default_rank_id"]: return True
+		if rank_id == guild_data["owner_rank_id"]: return False
+
+		query = "UPDATE master SET default_rank_id=:rank_id WHERE guild_id=:guild_id"
+		data = {"guild_id" : guild_id, "rank_id" : rank_id}
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		return True
 
 	async def IncrementGuildPlayerCount( guild_id : int, amount : Literal[1, -1] ) -> bool:
 		query = 'SELECT total_members FROM master WHERE guild_id=:guild_id'
@@ -255,26 +267,38 @@ class InternalGuildsAPI:
 			await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
+	async def IsUserInGuildOfId(
+		guild_id : int,
+		user_id : int
+	) -> bool:
+		query = 'SELECT rank_id FROM members WHERE user_id=:user_id AND guild_id=:guild_id'
+		data = {'guild_id' : guild_id, 'user_id' : user_id}
+		result = await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		return result is not None
+
 	async def TransferGuildOwnership(
 		guild_id : int,
 		target_id : int
 	) -> bool:
-		raise NotImplementedError
-		# in_guild : bool = await self.is_user_in_guild( guild_id, user_id )
-		# if in_guild is False: return False
-		# guild_data = await self.get_guild_info_by_id( guild_id )
-		# if guild_data is None: return False
-		# if guild_data["owner_id"] == user_id: return True
+		in_guild = await InternalGuildsAPI.IsUserInGuildOfId(guild_id, target_id)
+		if in_guild is False:
+			return False
 
-		# query = "UPDATE users SET rank=:rank WHERE user_id=:user_id AND guild_id=:guild_id"
-		# data_old_owner = {"guild_id" : guild_id, "user_id" : guild_data["owner_id"], "rank" : guild_data["default_rank"] }
-		# data_new_owner = {"guild_id" : guild_id, "user_id" : user_id, "rank" : guild_data["owner_rank"] }
-		# await self.database_api.execute_many(self.main_database_name, query, [data_old_owner, data_new_owner])
+		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId( guild_id )
+		if guild_data is None: return False
+		if guild_data["owner_id"] == target_id: return False # cannot give to self
 
-		# query = "UPDATE master SET owner_id=:owner_id WHERE id=:guild_id"
-		# data = {"guild_id" : guild_id, "owner_id" : user_id}
-		# await self.database_api.execute(self.main_database_name, query, data)
-		# return True
+		original_owner : int = guild_data["owner_id"]
+		query = "UPDATE users SET rank_id=:rank WHERE user_id=:user_id AND guild_id=:guild_id"
+		await DatabaseAPI.execute_many(InternalGuildsAPI.DATABASE_NAME, query, [
+			{"guild_id" : guild_id, "user_id" : original_owner, "rank" : guild_data["default_rank"] },
+			{"guild_id" : guild_id, "user_id" : target_id, "rank" : guild_data["owner_rank"] }
+		])
+
+		query = "UPDATE master SET owner_id=:owner_id WHERE guild_id=:guild_id"
+		data = {"guild_id" : guild_id, "owner_id" : target_id}
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
+		return True
 
 	async def GetGuildBannedUserIds(
 		guild_id : int
