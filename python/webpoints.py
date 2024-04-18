@@ -195,6 +195,13 @@ async def GetCreatedGuilds(
 ) -> list[dict]:
 	return await InternalGuildsAPI.GetCreatedGuilds(offset=offset, limit=limit)
 
+@guilds_api.post('/does-guild-have-rank-of-id', summary='DoesGuildHaveRankOfId', tags=['guild-core'])
+async def DoesGuildHaveRankOfId(
+	guild_id : int = Body(-1, embed=True),
+	rank_id : int = Body(-1, embed=True)
+) -> bool:
+	return await InternalGuildsAPI.DoesGuildHaveRankOfId(guild_id, rank_id)
+
 @guilds_api.post('/get-created-guilds-full', summary='GetCreatedGuildsFull', tags=['guild-core'])
 async def GetCreatedGuildsFull(
 	offset : int = Body(0, embed=True),

@@ -1,6 +1,6 @@
 
 from __future__ import annotations
-from typing import Any, Union
+from typing import Any, Literal, Union
 from pydantic import BaseModel
 from database import DatabaseAPI
 
@@ -126,10 +126,18 @@ class InternalGuildsAPI:
 		data = {'guild_id' : guild_id, 'name' : name, 'permissions' : "{}", 'protected' : int(protected)}
 		return await DatabaseAPI.execute_and_return(InternalGuildsAPI.DATABASE_NAME, query, data)
 
+	async def DoesGuildHaveRankOfId( guild_id : int, rank_id : int ) -> bool:
+		query : str = 'SELECT rank_id FROM ranks WHERE guild_id=:guild_id AND rank_id=:rank_id'
+		data = {'guild_id' : guild_id, 'rank_id' : rank_id}
+		return await DatabaseAPI.execute_and_return(InternalGuildsAPI.DATABASE_NAME, query, data) is not None
+
 	async def RemoveRankInGuild(
 		guild_id : int,
 		rank_id : int
 	) -> bool:
+		# if InternalGuildsAPI.DoesGuildHaveRankOfId(guild_id, rank_id) is False:
+		# 	return False
+		# query : str = 'DELETE FROM ranks WHERE guild_id=:guild_id AND protected=0'
 		raise NotImplementedError
 
 	async def SetDefaultRankInGuild(
@@ -138,16 +146,37 @@ class InternalGuildsAPI:
 	) -> bool:
 		raise NotImplementedError
 
+	async def IncrementGuildPlayerCount( guild_id : int, amount : Literal[1, -1] ) -> bool:
+		query = 'SELECT total_members FROM master WHERE guild_id=:guild_id'
+		data = {'guild_id' : guild_id}
+		value = await DatabaseAPI.fetch_one( InternalGuildsAPI.DATABASE_NAME, query, data )
+		if value is None: return False
+		new_amount = value['total_members'] + amount
+		query = 'UPDATE master SET total_members=:total_members WHERE guild_id=:guild_id'
+		data = {'guild_id' : guild_id, 'total_members' : new_amount}
+		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
+		return True
+
 	async def KickUserIdFromGuild(
 		guild_id : int,
 		target_id : int
 	) -> bool:
-		raise NotImplementedError
+		# check if the user is in the guild
+		user_guild = await InternalGuildsAPI.GetGuildInfoFromUserId(target_id)
+		if user_guild is None: return False
+		if user_guild['guild_id'] != guild_id: return False
+		if user_guild['owner_id'] == target_id: return False # can't kick owner
+
+		# remove from guild and decrement member count
+		query = 'DELETE FROM members WHERE user_id=:user_id AND guild_id=:guild_id'
+		data = {'user_id' : target_id, 'guild_id' : guild_id}
+		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
+		await InternalGuildsAPI.IncrementGuildPlayerCount(guild_id, -1)
+		return True
 
 	async def DeleteGuild(
 		guild_id : int
 	) -> bool:
-
 		if InternalGuildsAPI.OUTPUT_DELETED_TO_FILE is True:
 			backup = await InternalGuildsAPI.GetFullGuildInfoFromGuildId(guild_id)
 			if backup is None:
@@ -211,7 +240,22 @@ class InternalGuildsAPI:
 		guild_id : int,
 		target_id : int
 	) -> bool:
-		raise NotImplementedError
+		query = 'SELECT banned_json FROM banned WHERE guild_id=:guild_id'
+		data = {'guild_id' : guild_id}
+		value = await DatabaseAPI.fetch_one( InternalGuildsAPI.DATABASE_NAME, query, data )
+		if value is None:
+			return True
+		try:
+			values = json.loads(value)
+		except:
+			values = []
+		if target_id not in values:
+			return True
+		values.pop(target_id)
+		query : str = 'UPDATE banned SET banned_json=:banned_json WHERE guild_id=:guild_id'
+		data = {'guild_id' : guild_id, 'banned_json' : json.dumps(values)}
+		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
+		return True
 
 	async def CreateGuildChatMessage(
 		guild_id : int,
