@@ -21,7 +21,9 @@ class InternalGuildsAPI:
 	OUTPUT_DELETED_TO_FILE : bool = False
 
 	@staticmethod
-	async def initialize( ) -> None:
+	async def initialize(
+
+	) -> None:
 		constructors = [
 			"CREATE TABLE IF NOT EXISTS master (guild_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT NOT NULL, accessibility INTEGER DEFAULT 0, emblem INTEGER NOT NULL, owner_id INTEGER NOT NULL, owner_rank_id INTEGER DEFAULT -1, default_rank_id INTEGER DEFAULT -1, total_members INTEGER DEFAULT 1, total_online INTEGER DEFAULT 0, creation INTEGER NOT NULL);",
 			"CREATE TABLE IF NOT EXISTS members (user_id INTEGER PRIMARY KEY UNIQUE, guild_id INTEGER NOT NULL, rank_id INTEGER DEFAULT -1, timestamp INTEGER NOT NULL);",
