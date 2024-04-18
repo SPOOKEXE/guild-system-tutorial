@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, Body, HTTPException, Header, Request, Secu
 from fastapi.security import api_key
 from guilds import InternalGuildsAPI, DEFAULT_GUILD_AUDIT_LOG_LIMIT, DEFAULT_GUILD_CHAT_MESSAGE_LIMIT
 
-APP_API_KEY : str = 'guilds-api-key-10001010101'
+APP_API_KEY : str = None
 
 async def set_api_key( value : str ) -> None:
 	global APP_API_KEY
@@ -96,18 +96,18 @@ async def AddUserIdToGuild(
 @guilds_api.post('/set-user-id-rank-in-guild', summary='SetUserIdRankInGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def SetUserIdRankInGuild(
 	guild_id : int = Body(-1, embed=True),
-	target_id : int = Body(-1, embed=True),
+	user_id : int = Body(-1, embed=True),
 	rank_id : int = Body(-1, embed=True)
 ) -> bool:
-	return await InternalGuildsAPI.SetUserIdRankInGuild(guild_id, target_id, rank_id)
+	return await InternalGuildsAPI.SetUserIdRankInGuild(guild_id, user_id, rank_id)
 
 @guilds_api.post('/change-guild-rank-permissions', summary='ChangeGuildRankPermissions', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
-async def ChangeRankPermissionsInGuild(
+async def ChangeGuildRankPermissions(
 	guild_id : int = Body(-1, embed=True),
 	rank_id : int = Body(-1, embed=True),
 	permissions : dict = Body(None, embed=True)
 ) -> bool:
-	return await InternalGuildsAPI.ChangeRankPermissionsInGuild(guild_id, rank_id, permissions)
+	return await InternalGuildsAPI.ChangeGuildRankPermissions(guild_id, rank_id, permissions)
 
 @guilds_api.post('/create-rank-in-guild', summary='CreateRankInGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def CreateRankInGuild(
@@ -134,9 +134,9 @@ async def SetDefaultRankInGuild(
 @guilds_api.post('/kick-user-id-from-guild', summary='KickUserIdFromGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def KickUserIdFromGuild(
 	guild_id : int = Body(-1, embed=True),
-	target_id : int = Body(-1, embed=True),
+	user_id : int = Body(-1, embed=True),
 ) -> bool:
-	return await InternalGuildsAPI.KickUserIdFromGuild(guild_id, target_id)
+	return await InternalGuildsAPI.KickUserIdFromGuild(guild_id, user_id)
 
 @guilds_api.post('/delete-guild', summary='DeleteGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def DeleteGuild(
@@ -145,11 +145,11 @@ async def DeleteGuild(
 	return await InternalGuildsAPI.DeleteGuild(guild_id)
 
 @guilds_api.post('/is-user-in-guild-of-id', summary='IsUserInGuildOfId', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
-async def IsUserInGuildOfId(
+async def IsUserInGuild(
 	guild_id : int = Body(-1, embed=True),
 	user_id : int = Body(-1, embed=True),
 ) -> bool:
-	return await InternalGuildsAPI.IsUserInGuildOfId(guild_id, user_id)
+	return await InternalGuildsAPI.IsUserInGuild(guild_id, user_id)
 
 @guilds_api.post('/transfer-guild-ownership', summary='TransferGuildOwnership', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def TransferGuildOwnership(
@@ -167,16 +167,16 @@ async def GetGuildBannedUserIds(
 @guilds_api.post('/ban-user-id-from-guild', summary='BanUserIdFromGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def BanUserIdFromGuild(
 	guild_id : int = Body(-1, embed=True),
-	target_id : int = Body(-1, embed=True)
+	user_id : int = Body(-1, embed=True)
 ) -> bool:
-	return await InternalGuildsAPI.BanUserIdFromGuild(guild_id, target_id)
+	return await InternalGuildsAPI.BanUserIdFromGuild(guild_id, user_id)
 
 @guilds_api.post('/unban-user-id-from-guild', summary='UnbanUserIdFromGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def UnbanUserIdFromGuild(
 	guild_id : int = Body(-1, embed=True),
-	target_id : int = Body(-1, embed=True)
+	user_id : int = Body(-1, embed=True)
 ) -> bool:
-	return await InternalGuildsAPI.UnbanUserIdFromGuild(guild_id, target_id)
+	return await InternalGuildsAPI.UnbanUserIdFromGuild(guild_id, user_id)
 
 @guilds_api.post('/get-guild-chat-message-from-id', summary='GetGuildChatMessageFromId', tags=['guild-chat'], dependencies=[Depends(validate_api_key)])
 async def GetGuildChatMessageFromId(
@@ -194,10 +194,9 @@ async def CreateGuildChatMessage(
 
 @guilds_api.post('/remove-guild-chat-message', summary='RemoveGuildChatMessage', tags=['guild-chat'], dependencies=[Depends(validate_api_key)])
 async def RemoveGuildChatMessage(
-	guild_id : int = Body(-1, embed=True),
 	message_id : int = Body(-1, embed=True)
 ) -> bool:
-	return await InternalGuildsAPI.RemoveGuildChatMessage(guild_id, message_id)
+	return await InternalGuildsAPI.RemoveGuildChatMessage(message_id)
 
 @guilds_api.post('/get-guild-chat-messages', summary='GetGuildChatMessages', tags=['guild-chat'], dependencies=[Depends(validate_api_key)])
 async def GetGuildChatMessages(
@@ -212,7 +211,7 @@ async def GetGuildChatMessages(
 async def CreateGuildAuditLog(
 	guild_id : int = Body(-1, embed=True),
 	user_id : int = Body(-1, embed=True),
-	action : str = Body(None, embed=True),
+	action : int = Body(None, embed=True),
 	args : list = Body(list(), embed=True),
 ) -> Union[dict, None]:
 	return await InternalGuildsAPI.CreateGuildAuditLog(guild_id, user_id, action, args)
@@ -227,17 +226,15 @@ async def GetGuildAuditLogs(
 
 @guilds_api.post('/get-full-guild-info-from-guild-id', summary='GetFullGuildInfoFromGuildId', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def GetFullGuildInfoFromGuildId(
-	guild_id : int = Body(-1, embed=True),
-	user_id : int = Body(-1, embed=True)
+	guild_id : int = Body(-1, embed=True)
 ) -> Union[dict, None]:
-	return await InternalGuildsAPI.GetFullGuildInfoFromGuildId(guild_id, user_id)
+	return await InternalGuildsAPI.GetFullGuildInfoFromGuildId(guild_id)
 
 @guilds_api.post('/get-full-guild-info-from-user-id', summary='GetFullGuildInfoFromUserId', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def GetFullGuildInfoFromUserId(
-	guild_id : int = Body(-1, embed=True),
 	user_id : int = Body(-1, embed=True),
 ) -> Union[dict, None]:
-	return await InternalGuildsAPI.GetFullGuildInfoFromUserId(guild_id, user_id)
+	return await InternalGuildsAPI.GetFullGuildInfoFromUserId(user_id)
 
 @guilds_api.post('/get-guild-ranks', summary='GetGuildRanks', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def GetGuildRanks(
@@ -284,4 +281,5 @@ async def CreateGuild(
 async def main( host : str = '0.0.0.0', port : int = 5100, api_key : str = None ) -> None:
 	print(f'Setting API_Key to "{api_key}"')
 	await set_api_key(api_key)
+	await InternalGuildsAPI.initialize()
 	await host_fastapp(guilds_api, host, port)

@@ -1,62 +1,82 @@
 
-local function hasInit(tbl : table) : boolean
-	return tbl.Init or (getmetatable(tbl) and getmetatable(tbl).Init)
+local DEBUG_MODE = true
+
+local Cache = {}
+
+local function SetDebugModule(enabled : boolean)
+	DEBUG_MODE = enabled
 end
 
-local function hasStart(tbl : table) : boolean
+local function HasInitFunction(tbl : {}) : boolean
+	return tbl.Init or ( getmetatable(tbl) and getmetatable(tbl).Init )
+end
+
+local function HasStartFunction(tbl : table) : boolean
 	return tbl.Start or (getmetatable(tbl) and getmetatable(tbl).Start)
 end
 
-local CacheTable = {}
-
-local function cacheParent( _, Parent )
-	local Cache = CacheTable[Parent]
-	if Cache then
-		return Cache
+local function Register( Parent : Instance ) : {}
+	if Cache[Parent] then
+		return Cache[Parent]
 	end
-	Cache = {}
-	CacheTable[Parent] = Cache
-
-	-- Require Modules
-	for _, ModuleScript in ipairs( Parent:GetChildren() ) do
+	if DEBUG_MODE then
+		print("Caching Children of: ", Parent:GetFullName())
+	end
+	local Children = {}
+	for _, ModuleScript in Parent:GetChildren() do
 		if ModuleScript:IsA('ModuleScript') then
-			Cache[ModuleScript.Name] = require(ModuleScript)
-		end
-	end
-
-	-- Initialize
-	for preLoadedName, preLoaded in pairs(Cache) do
-		if typeof(preLoaded) ~= 'table' or preLoaded.Initialised or (not hasInit(preLoaded)) then
-			continue
-		end
-		local accessibles = { ParentSystems = CacheTable[Parent.Parent] }
-		for otherLoadedName, differentLoaded in pairs(Cache) do
-			if preLoadedName == otherLoadedName then
-				continue
+			if Children[ModuleScript.Name] then
+				local message = 'Duplicate child under parent: %s %s'
+				error(string.format(message, Children.Name, Parent:GetFullName()))
 			end
-			accessibles[otherLoadedName] = differentLoaded
+			Children[ModuleScript.Name] = require(ModuleScript)
 		end
-		preLoaded.Initialised = true
-		preLoaded.Init(accessibles)
 	end
-
-	return Cache
+	Cache[Parent] = Children
+	return Children
 end
 
-local function startFramework()
-	for _, cache in pairs( CacheTable ) do
-		for _, preLoaded in pairs(cache) do
-			if typeof(preLoaded) ~= 'table' or preLoaded.Started or (not hasStart(preLoaded)) then
+local function Init()
+	for Parent, children in Cache do
+		for initName, initModule in children do
+			if typeof(initModule) ~= 'table' then
 				continue
 			end
-			preLoaded.Started = true
-			preLoaded.Start()
+			if initModule.Initialized or not HasInitFunction(initModule) then
+				continue
+			end
+			local Container = { ParentSystems = Cache[Parent.Parent] }
+			for otherInitName, otherInitModule in children do
+				if otherInitName == initName then
+					continue
+				end
+				Container[otherInitName] = otherInitModule
+			end
+			initModule.Initialized = true
+			if DEBUG_MODE then
+				print("Initializing Module:", Parent:GetFullName(), '->', initName)
+			end
+			initModule.Init(Container)
 		end
 	end
 end
 
--- // MAIN // --
-local Table = { }
-Table.__call = cacheParent
-Table.Start = startFramework
-return setmetatable(Table, Table)
+local function Start()
+	for parent, children in Cache do
+		for name, module in pairs(children) do
+			if typeof(module) ~= 'table' then
+				continue
+			end
+			if module.Started or not HasStartFunction(module) then
+				continue
+			end
+			module.Started = true
+			if DEBUG_MODE then
+				print("Starting Module:", parent:GetFullName(), '->', name)
+			end
+			task.defer(module.Start)
+		end
+	end
+end
+
+return { SetDebugModule = SetDebugModule, Register = Register, Init = Init, Start = Start }

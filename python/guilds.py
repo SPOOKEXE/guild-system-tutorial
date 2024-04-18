@@ -21,9 +21,7 @@ class InternalGuildsAPI:
 	OUTPUT_DELETED_TO_FILE : bool = False
 
 	@staticmethod
-	async def initialize(
-
-	) -> None:
+	async def initialize( ) -> None:
 		constructors = [
 			"CREATE TABLE IF NOT EXISTS master (guild_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT NOT NULL, accessibility INTEGER DEFAULT 0, emblem INTEGER NOT NULL, owner_id INTEGER NOT NULL, owner_rank_id INTEGER DEFAULT -1, default_rank_id INTEGER DEFAULT -1, total_members INTEGER DEFAULT 1, total_online INTEGER DEFAULT 0, creation INTEGER NOT NULL);",
 			"CREATE TABLE IF NOT EXISTS members (user_id INTEGER PRIMARY KEY UNIQUE, guild_id INTEGER NOT NULL, rank_id INTEGER DEFAULT -1, timestamp INTEGER NOT NULL);",
@@ -91,9 +89,9 @@ class InternalGuildsAPI:
 	) -> Union[dict, None]:
 		data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
 		if data is None: return None
-		data['ranks'] = await InternalGuildsAPI.GetGuildRanks( guild_id )
-		data['members'] = await InternalGuildsAPI.GetGuildMembers( guild_id )
-		data['banned'] = await InternalGuildsAPI.GetGuildBannedUserIds( guild_id )
+		data["ranks"] = await InternalGuildsAPI.GetGuildRanks( guild_id )
+		data["members"] = await InternalGuildsAPI.GetGuildMembers( guild_id )
+		data["banned"] = await InternalGuildsAPI.GetGuildBannedUserIds( guild_id )
 		return data
 
 	@staticmethod
@@ -137,7 +135,7 @@ class InternalGuildsAPI:
 	@staticmethod
 	async def SetUserIdRankInGuild(
 		guild_id : int,
-		target_id : int,
+		user_id : int,
 		rank_id : int
 	) -> bool:
 		rank_data = await InternalGuildsAPI.GetGuildRankById(rank_id)
@@ -146,15 +144,15 @@ class InternalGuildsAPI:
 
 		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId(guild_id)
 		if guild_data is None: return False
-		if guild_data["owner_id"] == target_id: return False # owner can't change role
+		if guild_data["owner_id"] == user_id: return False # owner can't change role
 
 		query = "UPDATE members SET rank_id=:rank_id WHERE user_id=:user_id AND guild_id=:guild_id"
-		data = {"guild_id" : guild_id, "user_id" : target_id, "rank_id" : rank_id }
+		data = {"guild_id" : guild_id, "user_id" : user_id, "rank_id" : rank_id }
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
 	@staticmethod
-	async def ChangeRankPermissionsInGuild(
+	async def ChangeGuildRankPermissions(
 		guild_id : int,
 		rank_id : int,
 		permissions : dict
@@ -257,17 +255,17 @@ class InternalGuildsAPI:
 	@staticmethod
 	async def KickUserIdFromGuild(
 		guild_id : int,
-		target_id : int
+		user_id : int
 	) -> bool:
 		# check if the user is in the guild
-		user_guild = await InternalGuildsAPI.GetGuildInfoFromUserId(target_id)
+		user_guild = await InternalGuildsAPI.GetGuildInfoFromUserId(user_id)
 		if user_guild is None: return False
 		if user_guild['guild_id'] != guild_id: return False
-		if user_guild['owner_id'] == target_id: return False # can't kick owner
+		if user_guild['owner_id'] == user_id: return False # can't kick owner
 
 		# remove from guild and decrement member count
 		query = 'DELETE FROM members WHERE user_id=:user_id AND guild_id=:guild_id'
-		data = {'user_id' : target_id, 'guild_id' : guild_id}
+		data = {'user_id' : user_id, 'guild_id' : guild_id}
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		await InternalGuildsAPI.IncrementGuildPlayerCount(guild_id, -1)
 		return True
@@ -297,7 +295,7 @@ class InternalGuildsAPI:
 		return True
 
 	@staticmethod
-	async def IsUserInGuildOfId(
+	async def IsUserInGuild(
 		guild_id : int,
 		user_id : int
 	) -> bool:
@@ -309,25 +307,25 @@ class InternalGuildsAPI:
 	@staticmethod
 	async def TransferGuildOwnership(
 		guild_id : int,
-		target_id : int
+		user_id : int
 	) -> bool:
-		in_guild = await InternalGuildsAPI.IsUserInGuildOfId(guild_id, target_id)
+		in_guild = await InternalGuildsAPI.IsUserInGuild(guild_id, user_id)
 		if in_guild is False:
 			return False
 
 		guild_data = await InternalGuildsAPI.GetGuildInfoFromGuildId( guild_id )
 		if guild_data is None: return False
-		if guild_data["owner_id"] == target_id: return False # cannot give to self
+		if guild_data["owner_id"] == user_id: return False # cannot give to self
 
 		original_owner : int = guild_data["owner_id"]
 		query = "UPDATE users SET rank_id=:rank WHERE user_id=:user_id AND guild_id=:guild_id"
 		await DatabaseAPI.execute_many(InternalGuildsAPI.DATABASE_NAME, query, [
 			{"guild_id" : guild_id, "user_id" : original_owner, "rank" : guild_data["default_rank"] },
-			{"guild_id" : guild_id, "user_id" : target_id, "rank" : guild_data["owner_rank"] }
+			{"guild_id" : guild_id, "user_id" : user_id, "rank" : guild_data["owner_rank"] }
 		])
 
 		query = "UPDATE master SET owner_id=:owner_id WHERE guild_id=:guild_id"
-		data = {"guild_id" : guild_id, "owner_id" : target_id}
+		data = {"guild_id" : guild_id, "owner_id" : user_id}
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
@@ -339,14 +337,14 @@ class InternalGuildsAPI:
 		data = {'guild_id' : guild_id}
 		value = await DatabaseAPI.fetch_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		try:
-			return json.dumps(value) if value is not None else []
+			return json.loads(value['banned_json']) if value is not None else []
 		except:
 			return []
 
 	@staticmethod
 	async def BanUserIdFromGuild(
 		guild_id : int,
-		target_id : int
+		user_id : int
 	) -> bool:
 		query = 'SELECT banned_json FROM banned WHERE guild_id=:guild_id'
 		data = {'guild_id' : guild_id}
@@ -356,20 +354,21 @@ class InternalGuildsAPI:
 				values = json.loads(value)
 			except:
 				values = []
-			if target_id in values:
+			if user_id in values:
 				return True # already banned
-			values.append(target_id)
+			values.append(user_id)
+			query : str = 'UPDATE banned SET banned_json=:banned_json WHERE guild_id=:guild_id'
 		else:
-			values = [target_id]
-		query : str = 'UPDATE banned SET banned_json=:banned_json WHERE guild_id=:guild_id'
-		data = {'guild_id' : guild_id, 'banned_json' : json.dumps(values)}
+			values = [user_id]
+			query : str = 'INSERT INTO banned (guild_id, banned_json) VALUES (:guild_id, :banned_json)'
+		data = {'guild_id' : guild_id, 'banned_json' : json.dumps(values, separators=(",", ":")) }
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
 	@staticmethod
 	async def UnbanUserIdFromGuild(
 		guild_id : int,
-		target_id : int
+		user_id : int
 	) -> bool:
 		query = 'SELECT banned_json FROM banned WHERE guild_id=:guild_id'
 		data = {'guild_id' : guild_id}
@@ -377,14 +376,14 @@ class InternalGuildsAPI:
 		if value is None:
 			return True
 		try:
-			values = json.loads(value)
+			values = json.loads(value['banned_json'])
 		except:
 			values = []
-		if target_id not in values:
+		if user_id not in values:
 			return True
-		values.pop(target_id)
+		values.remove(user_id)
 		query : str = 'UPDATE banned SET banned_json=:banned_json WHERE guild_id=:guild_id'
-		data = {'guild_id' : guild_id, 'banned_json' : json.dumps(values)}
+		data = {'guild_id' : guild_id, 'banned_json' : json.dumps(values, separators=(",", ":"))}
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
@@ -413,7 +412,6 @@ class InternalGuildsAPI:
 
 	@staticmethod
 	async def RemoveGuildChatMessage(
-		guild_id : int,
 		message_id : int
 	) -> bool:
 		message_data : dict = await InternalGuildsAPI.GetGuildChatMessageFromId(message_id)
@@ -430,18 +428,19 @@ class InternalGuildsAPI:
 		limit : int = DEFAULT_GUILD_CHAT_MESSAGE_LIMIT,
 		include_deleted : bool = False
 	) -> list[dict]:
+		print(include_deleted)
 		if include_deleted is True:
-			query = f"SELECT id, user_id, message, timestamp FROM audit_logs WHERE guild_id=:guild_id LIMIT {limit} OFFSET {offset}"
+			query = f"SELECT id, user_id, message, timestamp, deleted FROM guild_chat WHERE guild_id=:guild_id LIMIT {limit} OFFSET {offset}"
 		else:
-			query = f"SELECT id, user_id, message, timestamp FROM audit_logs WHERE guild_id=:guild_id AND deleted=0 LIMIT {limit} OFFSET {offset}"
+			query = f"SELECT id, user_id, message, timestamp, deleted FROM guild_chat WHERE guild_id=:guild_id AND deleted=0 LIMIT {limit} OFFSET {offset}"
 		data = {"guild_id" : guild_id}
-		return await DatabaseAPI.fetch_all(query, data)
+		return await DatabaseAPI.fetch_all(InternalGuildsAPI.DATABASE_NAME, query, data)
 
 	@staticmethod
 	async def CreateGuildAuditLog(
 		guild_id : int,
 		user_id : int,
-		action : str,
+		action : int,
 		args : list = list(),
 	) -> Union[dict, None]:
 		timestamp = get_time()
@@ -460,9 +459,9 @@ class InternalGuildsAPI:
 		offset : int = 0,
 		limit : int = DEFAULT_GUILD_AUDIT_LOG_LIMIT
 	) -> list[dict]:
-		query = f"SELECT user_id, rank_id, timestamp, action, args FROM audit_logs WHERE guild_id=:guild_id LIMIT {limit} OFFSET {offset}"
+		query = f"SELECT user_id, timestamp, action, args FROM audit_logs WHERE guild_id=:guild_id LIMIT {limit} OFFSET {offset}"
 		data = {"guild_id" : guild_id}
-		return await DatabaseAPI.fetch_all(query, data)
+		return await DatabaseAPI.fetch_all(InternalGuildsAPI.DATABASE_NAME, query, data)
 
 	@staticmethod
 	async def GetCreatedGuilds(
@@ -534,14 +533,14 @@ async def test() -> None:
 	# data = await InternalGuildsAPI.GetFullGuildInfoFromUserId(123123123)
 	# print(data)
 
-	# data = await InternalGuildsAPI.CreateGuild(123123123, 'test guild', 'hello world!', 1)
-	# print(data)
+	data = await InternalGuildsAPI.CreateGuild(123123123, 'test guild', 'hello world!', 1)
+	print(data)
 
 	# data = await InternalGuildsAPI.GetFullGuildInfoFromUserId(123123123)
 	# print(data)
 
 	# get all guilds and output
-	print( await InternalGuildsAPI.GetCreatedGuildsFull(offset=0, limit=9999) )
+	# print( await InternalGuildsAPI.GetCreatedGuildsFull(offset=0, limit=9999) )
 
 	# get all guilds and delete them all
 	# items = await InternalGuildsAPI.GetCreatedGuildsFull(offset=0, limit=9999)

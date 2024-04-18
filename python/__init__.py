@@ -8,7 +8,7 @@ if __name__ == '__main__':
 	from typing import Union
 	if os.path.isabs( sys.argv[0] ) is True:
 		# ran using 'Run Python File' button
-		api_key = 'hello!'
+		api_key = 'guilds-api-key-10001010101'
 	else:
 		# ran through command prompt
 		api_key : Union[str, None] = None if len(sys.argv) == 1 else sys.argv[1]

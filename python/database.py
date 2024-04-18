@@ -114,8 +114,7 @@ class DatabaseAPI:
 		database : BaseDatabase = await DatabaseAPI.get_database(name)
 		if database is None: return None
 		records : list[Record] = await database.fetch_all(query, values)
-		records : list[dict] = [ dict(record) for record in records if record is not None ]
-		return None if len(records) == 0 else records
+		return [ dict(record) for record in records if record is not None ]
 
 	@staticmethod
 	async def execute_and_return(

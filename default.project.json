@@ -1,5 +1,5 @@
 {
-	"name": "bladeborne-game",
+	"name": "guilds-api",
 	"tree": {
 		"$className": "DataModel",
 		"Players": {
@@ -11,27 +11,27 @@
 		},
 		"ReplicatedFirst": {
 			"$ignoreUnknownInstances": true,
-			"$path": "src/ReplicatedFirst"
+			"$path": "roblox/ReplicatedFirst"
 		},
 		"ReplicatedStorage": {
 			"$className": "ReplicatedStorage",
 			"$ignoreUnknownInstances": true,
-			"$path": "src/ReplicatedStorage"
+			"$path": "roblox/ReplicatedStorage"
 		},
 		"ServerScriptService": {
 			"$className": "ServerScriptService",
 			"$ignoreUnknownInstances": true,
-			"$path": "src/ServerScriptService"
+			"$path": "roblox/ServerScriptService"
 		},
 		"ServerStorage": {
 			"$className": "ServerStorage",
 			"$ignoreUnknownInstances": true,
-			"$path": "src/ServerStorage"
+			"$path": "roblox/ServerStorage"
 		},
 		"StarterPack" : {
 			"$className": "StarterPack",
 			"$ignoreUnknownInstances": true,
-			"$path": "src/StarterPack"
+			"$path": "roblox/StarterPack"
 		},
 		"StarterPlayer": {
 			"$className": "StarterPlayer",
@@ -44,7 +44,7 @@
 			"StarterPlayerScripts": {
 				"$className": "StarterPlayerScripts",
 				"$ignoreUnknownInstances": true,
-				"$path": "src/StarterPlayerScripts"
+				"$path": "roblox/StarterPlayerScripts"
 			}
 		}
 	}

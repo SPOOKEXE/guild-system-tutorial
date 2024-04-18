@@ -13,7 +13,7 @@ type RequestAsyncResponse = {
 
 local HttpService = game:GetService("HttpService")
 
-local function RequestAPIAsync( path : string, method : HttpMethods, body : {}? ) : RequestAsyncResponse
+local function RequestAPIAsync( path : string, method : HttpMethods, body : {}? ) : any?
 	if not HttpService.HttpEnabled then
 		warn('HttpService.HttpEnabled must be enabled for the GuildsAPI to work.')
 		return nil
@@ -29,115 +29,195 @@ local function RequestAPIAsync( path : string, method : HttpMethods, body : {}? 
 	end)
 
 	if success then
-		return err
+		local value, _ = string.gsub(err['Body'], "'", '"')
+		return value
 	end
 
 	warn(err)
 	return nil
 end
 
--- // APIInternal API // --
-local APIInternal = {}
+-- // Module // --
+local Module = {}
 
-function APIInternal.SetAPIUrl( api_url : string )
+function Module.SetAPIUrl( api_url : string )
 	API_URL = api_url
 end
 
-function APIInternal.SetAPIKey( api_key : string )
+function Module.SetAPIKey( api_key : string )
 	API_KEY = api_key
 end
 
-function APIInternal.HealthCheck() : boolean
-	return RequestAPIAsync('/health', 'GET', nil) ~= nil
+function Module.HealthCheck() : boolean?
+	return RequestAPIAsync('/health', 'GET', nil)
 end
 
-function APIInternal.IsRankPermissionsValid( permissions : PermissionsDict ) : boolean
-	--local response = RequestAPIAsync( '/guilds/add-user-to-guild', 'POST', { guild_id=guild_id, user_id=user_id } )
-	error('NotImplementedError')
+function Module.IsRankPermissionsValid( permissions : {}? ) : boolean?
+	return RequestAPIAsync('/is-rank-permissions-valid', 'POST', {permissions=permissions})
 end
 
-function APIInternal.IsGuildNameAvailable( name : string ) : boolean
-	error('NotImplementedError')
+function Module.IsGuildNameAvailable( name : string ) : boolean?
+	return RequestAPIAsync('/is-guild-name-available', 'POST', {name=name})
 end
 
-function APIInternal.GetGuildInfoFromGuildId( guild_id : number ) : GuildInfo?
-	error('NotImplementedError')
+function Module.GetGuildInfoFromGuildId( guild_id : number ) : {}?
+	local response = RequestAPIAsync('/get-guild-info-from-guild-id', 'POST', {guild_id=guild_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.GetGuildInfoFromUserId( user_id : number ) : GuildInfo?
-	error('NotImplementedError')
+function Module.GetGuildInfoFromUserId( user_id : number ) : {}?
+	local response = RequestAPIAsync('/get-guild-info-from-user-id', 'POST', {user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.UpdateGuildDisplayInfo( guild_id : number, description : string, accessibility : number, emblem : number ) : boolean
-	error('NotImplementedError')
+function Module.UpdateGuildDisplayInfo( guild_id : number, description : string, accessibility : number, emblem : number ) : boolean?
+	local response = RequestAPIAsync('/update-guild-display-info', 'POST', {guild_id=guild_id, description=description, accessibility=accessibility, emblem=emblem})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.CreateGuild( user_id : number, name : string, description : string, emblem : number ) : GuildInfo?
-	error('NotImplementedError')
+function Module.GetGuildRankById( rank_id : number ) : {}?
+	local response = RequestAPIAsync('/get-guild-rank-by-id', 'POST', {rank_id=rank_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.ChangeUserIdRankInGuild( guild_id : number, target_user_id : number, target_rank : number ) : boolean
-	error('NotImplementedError')
+function Module.AddUserIdToGuild( guild_id : number, user_id : number )
+	local response = RequestAPIAsync('/add-user-id-to-guild', 'POST', {guild_id=guild_id,user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.ChangeRankPermissionsInGuild( guild_id : number, rank_id : number, permissions : PermissionsDict ) : boolean
-	error('NotImplementedError')
+function Module.SetUserIdRankInGuild( guild_id : number, user_id : number, rank_id : number )
+	local response = RequestAPIAsync('/set-user-id-rank-in-guild', 'POST', {guild_id=guild_id, user_id=user_id, rank_id=rank_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.CreateRankInGuild( guild_id : number, name : string ) : RankData?
-	error('NotImplementedError')
+function Module.ChangeGuildRankPermissions( guild_id : number, rank_id : number, permissions : {} ) : boolean?
+	local response = RequestAPIAsync('/change-guild-rank-permissions', 'POST', {guild_id=guild_id, rank_id=rank_id, permissions=permissions})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.RemoveRankInGuild( guild_id : number, rank_id : number ) : boolean
-	error('NotImplementedError')
+-- TODO: test
+function Module.CreateRankInGuild( guild_id : number, name : string ) : {}?
+	local response = RequestAPIAsync('/create-rank-in-guild', 'POST', {guild_id=guild_id, name=name})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.SetDefaultRankInGuild( guild_id : number, rank_id : number ) : boolean
-	error('NotImplementedError')
+-- TODO: test
+function Module.RemoveRankInGuild( guild_id : number, rank_id : number ) : boolean?
+	local response = RequestAPIAsync('/remove-rank-in-guild', 'POST', {guild_id=guild_id, rank_id=rank_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.KickUserIdFromGuild( guild_id : number, target_id : number ) : boolean
-	error('NotImplementedError')
+-- TODO: test
+function Module.SetDefaultRankInGuild( guild_id : number, rank_id : number ) : boolean?
+	local response = RequestAPIAsync('/set-default-rank-in-guild', 'POST', {guild_id=guild_id, rank_id=rank_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.DeleteGuild( guild_id : number ) : boolean
-	error('NotImplementedError')
+-- TODO: test
+function Module.KickUserIdFromGuild( guild_id : number, user_id : number ) : boolean?
+	local response = RequestAPIAsync('/kick-user-id-from-guild', 'POST', {guild_id=guild_id, user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.TransferGuildOwnership( guild_id : number, user_id : number ) : boolean
-	error('NotImplementedError')
+function Module.DeleteGuild( guild_id : number ) : boolean?
+	local response = RequestAPIAsync('/delete-guild', 'POST', {guild_id=guild_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.GetBannedUserIdsInGuild( guild_id : number ) : {number}
-	error('NotImplementedError')
+function Module.IsUserInGuild( user_id : number, guild_id : number ) : boolean?
+	local response = RequestAPIAsync('/is-user-in-guild-of-id', 'POST', {guild_id=guild_id, user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.BanUserIdFromGuild( guild_id : number, user_id : number ) : boolean
-	error('NotImplementedError')
+-- TODO: test
+function Module.TransferGuildOwnership( guild_id : number, user_id : number ) : boolean?
+	local response = RequestAPIAsync('/transfer-guild-ownership', 'POST', {guild_id=guild_id, user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.UnbanUserIdFromGuild( guild_id : number, user_id : number ) : boolean
-	error('NotImplementedError')
+function Module.GetGuildBannedUserIds( guild_id : number ) : {number}?
+	local response = RequestAPIAsync('/get-guild-banned-user-ids', 'POST', {guild_id=guild_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.CreateGuildChatMessage( guild_id : number, user_id : number, message : string ) : boolean
-	error('NotImplementedError')
+function Module.BanUserIdFromGuild( guild_id : number, user_id : number ) : boolean?
+	local response = RequestAPIAsync('/ban-user-id-from-guild', 'POST', {guild_id=guild_id, user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.RemoveGuildChatMessage( guild_id : number, message_id : number ) : boolean
-	error('NotImplementedError')
+function Module.UnbanUserIdFromGuild( guild_id : number, user_id : number ) : boolean?
+	local response = RequestAPIAsync('/unban-user-id-from-guild', 'POST', {guild_id=guild_id, user_id=user_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.GetGuildChatMessages( guild_id : number, page_number : number, items_per_page : number ) : { GuildChatMessage }
-	error('NotImplementedError')
+function Module.GetGuildChatMessageFromId( message_id : number ) : {}?
+	local response = RequestAPIAsync('/get-guild-chat-message-from-id', 'POST', {message_id=message_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.CreateGuildAuditLog( guild_id : number, user_id : number, action : number, args : {any} ) : boolean
-	error('NotImplementedError')
+function Module.CreateGuildChatMessage( guild_id : number, user_id : number, message : string ) : boolean?
+	local response = RequestAPIAsync('/create-guild-chat-message', 'POST', {guild_id=guild_id, user_id=user_id, message=message})
+	return response and HttpService:JSONDecode(response)
 end
 
-function APIInternal.GetGuildAuditLogs( guild_id : number, page_number : number, items_per_page : number ) : { GuildAuditLog }
-	error('NotImplementedError')
+function Module.RemoveGuildChatMessage( message_id : number ) : boolean?
+	local response = RequestAPIAsync('/remove-guild-chat-message', 'POST', {message_id=message_id})
+	return response and HttpService:JSONDecode(response)
 end
 
-return APIInternal
+function Module.GetGuildChatMessages( guild_id : number, offset : number, limit : number, include_deleted : boolean ) : { {} }?
+	local response = RequestAPIAsync('/get-guild-chat-messages', 'POST', {guild_id=guild_id, offset=offset, limit=limit, include_deleted=include_deleted})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.CreateGuildAuditLog( guild_id : number, user_id : number, action : number, args : {any} ) : boolean?
+	local response = RequestAPIAsync('/create-guild-audit-log', 'POST', {guild_id=guild_id,user_id=user_id,action=action,args=args})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetGuildAuditLogs( guild_id : number, offset : number, limit : number ) : { {} }?
+	local response = RequestAPIAsync('/get-guild-audit-logs', 'POST', {guild_id=guild_id, offset=offset, limit=limit})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetFullGuildInfoFromGuildId( guild_id : number ) : {}?
+	local response = RequestAPIAsync('/get-full-guild-info-from-guild-id', 'POST', {guild_id=guild_id})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetFullGuildInfoFromUserId( user_id : number ) : {}?
+	local response = RequestAPIAsync('/get-full-guild-info-from-user-id', 'POST', {user_id=user_id})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetGuildRanks( guild_id : number ) : {}?
+	local response = RequestAPIAsync('/get-guild-ranks', 'POST', {guild_id=guild_id})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetGuildMembers( guild_id : number ) : {}?
+	local response = RequestAPIAsync('/get-guild-members', 'POST', {guild_id=guild_id})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetCreatedGuilds( offset : number, limit : number )
+	local response = RequestAPIAsync('/get-created-guilds', 'POST', {offset=offset, limit=limit})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.DoesGuildHaveRankOfId( guild_id : number, rank_id : number ) : boolean
+	local response = RequestAPIAsync('/does-guild-have-rank-of-id', 'POST', {guild_id=guild_id, rank_id=rank_id})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.GetCreatedGuildsFull( offset : number, limit : number )
+	local response = RequestAPIAsync('/get-created-guilds-full', 'POST', {offset=offset, limit=limit})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.CreateGuild( user_id : number, name : string, description : string, emblem : number ) : {}?
+	local response = RequestAPIAsync('/create-guild', 'POST', {user_id=user_id, name=name, description=description, emblem=emblem})
+	return response and HttpService:JSONDecode(response)
+end
+
+return Module
