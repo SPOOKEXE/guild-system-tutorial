@@ -15,8 +15,6 @@ function Module.Start()
 		return
 	end
 
-	--print( GuildsInternal.CreateGuild(2, 'lee epik', 'epic guild', 1) )
-
 end
 
 function Module.Init(otherSystems)

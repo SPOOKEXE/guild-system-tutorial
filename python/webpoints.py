@@ -3,7 +3,7 @@ import uvicorn
 import asyncio
 import time
 
-from typing import Any, Union
+from typing import Any, Literal, Union
 from fastapi import Depends, FastAPI, Body, HTTPException, Header, Request, Security
 from fastapi.security import api_key
 from guilds import InternalGuildsAPI, DEFAULT_GUILD_AUDIT_LOG_LIMIT, DEFAULT_GUILD_CHAT_MESSAGE_LIMIT
@@ -80,6 +80,13 @@ async def UpdateGuildDisplayInfo(
 ) -> Union[dict, None]:
 	return await InternalGuildsAPI.UpdateGuildDisplayInfo(guild_id, description, accessibility, emblem)
 
+@guilds_api.post('/get-user-rank-in-guild', summary='GetUserRankInGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
+async def GetUserRankInGuild(
+	guild_id : int = Body(-1, embed=True),
+	user_id : int = Body(-1, embed=True)
+) -> Union[dict, None]:
+	return await InternalGuildsAPI.GetUserRankInGuild(guild_id, user_id)
+
 @guilds_api.post('/get-guild-rank-by-id', summary='GetGuildRankById', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def GetGuildRankById(
 	rank_id : int = Body(-1, embed=True)
@@ -90,7 +97,7 @@ async def GetGuildRankById(
 async def AddUserIdToGuild(
 	guild_id : int = Body(-1, embed=True),
 	user_id : int = Body(-1, embed=True)
-) -> bool:
+) -> Union[dict, None]:
 	return await InternalGuildsAPI.AddUserIdToGuild(guild_id, user_id)
 
 @guilds_api.post('/set-user-id-rank-in-guild', summary='SetUserIdRankInGuild', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
@@ -154,9 +161,9 @@ async def IsUserInGuild(
 @guilds_api.post('/transfer-guild-ownership', summary='TransferGuildOwnership', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def TransferGuildOwnership(
 	guild_id : int = Body(-1, embed=True),
-	target_id : int = Body(-1, embed=True)
+	user_id : int = Body(-1, embed=True)
 ) -> bool:
-	return await InternalGuildsAPI.TransferGuildOwnership(guild_id, target_id)
+	return await InternalGuildsAPI.TransferGuildOwnership(guild_id, user_id)
 
 @guilds_api.post('/get-guild-banned-user-ids', summary='GetGuildBannedUserIds', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
 async def GetGuildBannedUserIds(
@@ -277,6 +284,13 @@ async def CreateGuild(
 	emblem : int = Body(-1, embed=True)
 ) -> Union[dict, None]:
 	return await InternalGuildsAPI.CreateGuild(user_id, name, description, emblem)
+
+@guilds_api.post('/increment-online-count', summary='IncrementOnlineCount', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
+async def IncrementOnlineCount(
+	guild_id : int = Body(-1, embed=True),
+	value : Literal[-1, 1] = Body(0, embed=True),
+) -> bool:
+	return await InternalGuildsAPI.IncrementOnlineCount(guild_id, value)
 
 async def main( host : str = '0.0.0.0', port : int = 5100, api_key : str = None ) -> None:
 	print(f'Setting API_Key to "{api_key}"')

@@ -75,6 +75,11 @@ function Module.UpdateGuildDisplayInfo( guild_id : number, description : string,
 	return response and HttpService:JSONDecode(response)
 end
 
+function Module.GetUserRankInGuild( guild_id : number, user_id : number ) : {}?
+	local response = RequestAPIAsync('/get-user-rank-in-guild', 'POST', {guild_id=guild_id, user_id=user_id})
+	return response and HttpService:JSONDecode(response)
+end
+
 function Module.GetGuildRankById( rank_id : number ) : {}?
 	local response = RequestAPIAsync('/get-guild-rank-by-id', 'POST', {rank_id=rank_id})
 	return response and HttpService:JSONDecode(response)
@@ -95,25 +100,21 @@ function Module.ChangeGuildRankPermissions( guild_id : number, rank_id : number,
 	return response and HttpService:JSONDecode(response)
 end
 
--- TODO: test
 function Module.CreateRankInGuild( guild_id : number, name : string ) : {}?
 	local response = RequestAPIAsync('/create-rank-in-guild', 'POST', {guild_id=guild_id, name=name})
 	return response and HttpService:JSONDecode(response)
 end
 
--- TODO: test
 function Module.RemoveRankInGuild( guild_id : number, rank_id : number ) : boolean?
 	local response = RequestAPIAsync('/remove-rank-in-guild', 'POST', {guild_id=guild_id, rank_id=rank_id})
 	return response and HttpService:JSONDecode(response)
 end
 
--- TODO: test
 function Module.SetDefaultRankInGuild( guild_id : number, rank_id : number ) : boolean?
 	local response = RequestAPIAsync('/set-default-rank-in-guild', 'POST', {guild_id=guild_id, rank_id=rank_id})
 	return response and HttpService:JSONDecode(response)
 end
 
--- TODO: test
 function Module.KickUserIdFromGuild( guild_id : number, user_id : number ) : boolean?
 	local response = RequestAPIAsync('/kick-user-id-from-guild', 'POST', {guild_id=guild_id, user_id=user_id})
 	return response and HttpService:JSONDecode(response)
@@ -129,7 +130,6 @@ function Module.IsUserInGuild( user_id : number, guild_id : number ) : boolean?
 	return response and HttpService:JSONDecode(response)
 end
 
--- TODO: test
 function Module.TransferGuildOwnership( guild_id : number, user_id : number ) : boolean?
 	local response = RequestAPIAsync('/transfer-guild-ownership', 'POST', {guild_id=guild_id, user_id=user_id})
 	return response and HttpService:JSONDecode(response)
@@ -217,6 +217,12 @@ end
 
 function Module.CreateGuild( user_id : number, name : string, description : string, emblem : number ) : {}?
 	local response = RequestAPIAsync('/create-guild', 'POST', {user_id=user_id, name=name, description=description, emblem=emblem})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.IncrementOnlineCount( guild_id : number, value : number )
+	assert( value == 1 or value == -1, 'You must set the increment to -1 or 1.' )
+	local response = RequestAPIAsync('/increment-online-count', 'POST', {guild_id=guild_id, value=value})
 	return response and HttpService:JSONDecode(response)
 end
 
