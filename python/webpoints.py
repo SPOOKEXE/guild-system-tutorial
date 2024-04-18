@@ -180,9 +180,27 @@ async def GetFullGuildInfoFromGuildId( guild_id : int, user_id : int ) -> Union[
 async def GetFullGuildInfoFromUserId( guild_id : int, user_id : int ) -> Union[dict, None]:
 	return await InternalGuildsAPI.GetFullGuildInfoFromUserId(guild_id, user_id)
 
+@guilds_api.post('/get-guild-ranks', summary='GetGuildRanks', tags=['guild-core'])
+async def GetGuildRanks( guild_id : int ) -> Union[list[dict], None]:
+	return await InternalGuildsAPI.GetGuildRanks(guild_id)
+
 @guilds_api.post('/get-guild-members', summary='GetGuildMembers', tags=['guild-core'])
 async def GetGuildMembers( guild_id : int ) -> Union[list[dict], None]:
 	return await InternalGuildsAPI.GetGuildMembers(guild_id)
+
+@guilds_api.post('/get-created-guilds', summary='GetCreatedGuilds', tags=['guild-core'])
+async def GetCreatedGuilds(
+	offset : int = Body(0, embed=True),
+	limit : int = Body(DEFAULT_GUILD_CHAT_MESSAGE_LIMIT, embed=True)
+) -> list[dict]:
+	return await InternalGuildsAPI.GetCreatedGuilds(offset=offset, limit=limit)
+
+@guilds_api.post('/get-created-guilds-full', summary='GetCreatedGuildsFull', tags=['guild-core'])
+async def GetCreatedGuildsFull(
+	offset : int = Body(0, embed=True),
+	limit : int = Body(DEFAULT_GUILD_CHAT_MESSAGE_LIMIT, embed=True)
+) -> list[dict]:
+	return await InternalGuildsAPI.GetCreatedGuildsFull(offset=offset, limit=limit)
 
 async def main( host : str = '0.0.0.0', port : int = 5100 ) -> None:
 	await host_fastapp(guilds_api, host, port)

@@ -4,6 +4,7 @@ import time
 from typing import Union
 from databases import Database
 from pydantic import BaseModel
+from databases.interfaces import Record
 
 import traceback
 import os
@@ -71,16 +72,22 @@ class DatabaseAPI:
 	async def fetch_one( name : str, query : str, data : Union[dict, None] ) -> Union[dict, None]:
 		database : BaseDatabase = await DatabaseAPI.get_database(name)
 		if database is None: return None
-		record = await database.fetch_one(query, data)
+		record : Record = await database.fetch_one(query, data)
 		if record is None: return None
 		return dict(record)
 
 	async def fetch_all( name : str, query : str, values : Union[list[dict], None] ) -> Union[list, None]:
 		database : BaseDatabase = await DatabaseAPI.get_database(name)
 		if database is None: return None
-		records = await database.fetch_all(query, values)
-		records = [ dict(record) for record in records if record is not None ]
+		records : list[Record] = await database.fetch_all(query, values)
+		records : list[dict] = [ dict(record) for record in records if record is not None ]
 		return None if len(records) == 0 else records
+
+	async def execute_and_return( name : str, query : str, data : Union[dict, None] ) -> Union[dict, None]:
+		database : BaseDatabase = await DatabaseAPI.get_database(name)
+		if database is None: return None
+		record = await database.fetch_one(query, data)
+		return dict(record) if record is not None else None
 
 async def test() -> None:
 	pass
