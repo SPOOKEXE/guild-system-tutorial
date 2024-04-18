@@ -20,6 +20,7 @@ class InternalGuildsAPI:
 	DATABASE_NAME : str = 'guilds'
 	OUTPUT_DELETED_TO_FILE : bool = False
 
+	@staticmethod
 	async def initialize( ) -> None:
 		constructors = [
 			"CREATE TABLE IF NOT EXISTS master (guild_id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT NOT NULL, accessibility INTEGER DEFAULT 0, emblem INTEGER NOT NULL, owner_id INTEGER NOT NULL, owner_rank_id INTEGER DEFAULT -1, default_rank_id INTEGER DEFAULT -1, total_members INTEGER DEFAULT 1, total_online INTEGER DEFAULT 0, creation INTEGER NOT NULL);",
@@ -31,12 +32,14 @@ class InternalGuildsAPI:
 		]
 		await DatabaseAPI.register_database(InternalGuildsAPI.DATABASE_NAME, constructors)
 
+	@staticmethod
 	async def IsRankPermissionsValid(
 		permissions : dict
 	) -> bool:
 		if isinstance(permissions, dict) is False: return False
 		return True # TODO
 
+	@staticmethod
 	async def IsGuildNameAvailable(
 		name : str
 	) -> bool:
@@ -45,6 +48,7 @@ class InternalGuildsAPI:
 		value = await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return value is None
 
+	@staticmethod
 	async def GetGuildInfoFromGuildId(
 		guild_id : int
 	) -> Union[dict, None]:
@@ -52,6 +56,7 @@ class InternalGuildsAPI:
 		data = {'guild_id' : guild_id}
 		return await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 
+	@staticmethod
 	async def GetGuildInfoFromUserId(
 		user_id : int
 	) -> Union[dict, None]:
@@ -62,6 +67,7 @@ class InternalGuildsAPI:
 		gid : int = value['guild_id']
 		return await InternalGuildsAPI.GetGuildInfoFromGuildId(gid)
 
+	@staticmethod
 	async def GetGuildMembers(
 		guild_id : int
 	) -> Union[list[dict], None]:
@@ -69,6 +75,7 @@ class InternalGuildsAPI:
 		data = {'guild_id' : guild_id}
 		return await DatabaseAPI.fetch_all(InternalGuildsAPI.DATABASE_NAME, query, data)
 
+	@staticmethod
 	async def GetGuildRanks(
 		guild_id : int
 	) -> Union[list[dict], None]:
@@ -76,6 +83,7 @@ class InternalGuildsAPI:
 		data = {'guild_id' : guild_id}
 		return await DatabaseAPI.fetch_all(InternalGuildsAPI.DATABASE_NAME, query, data)
 
+	@staticmethod
 	async def GetFullGuildInfoFromGuildId(
 		guild_id : int
 	) -> Union[dict, None]:
@@ -86,6 +94,7 @@ class InternalGuildsAPI:
 		data['banned'] = await InternalGuildsAPI.GetGuildBannedUserIds( guild_id )
 		return data
 
+	@staticmethod
 	async def GetFullGuildInfoFromUserId(
 		user_id : int
 	) -> Union[dict, None]:
@@ -95,6 +104,7 @@ class InternalGuildsAPI:
 		if value is None: return None
 		return await InternalGuildsAPI.GetFullGuildInfoFromGuildId( value['guild_id'] )
 
+	@staticmethod
 	async def UpdateGuildDisplayInfo(
 		guild_id : int,
 		description : str,
@@ -107,6 +117,7 @@ class InternalGuildsAPI:
 		data = { "guild_id" : guild_id, "description" : description, "emblem" : emblem, "accessibility" : accessibility }
 		return await DatabaseAPI.execute_and_return(InternalGuildsAPI.DATABASE_NAME, query, data)
 
+	@staticmethod
 	async def AddUserIdToGuild(
 		guild_id : int,
 		user_id : int
@@ -121,6 +132,7 @@ class InternalGuildsAPI:
 		await InternalGuildsAPI.IncrementGuildPlayerCount(guild_id, 1)
 		return True
 
+	@staticmethod
 	async def SetUserIdRankInGuild(
 		guild_id : int,
 		target_id : int,
@@ -139,6 +151,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
+	@staticmethod
 	async def ChangeRankPermissionsInGuild(
 		guild_id : int,
 		rank_id : int,
@@ -155,6 +168,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
+	@staticmethod
 	async def CreateRankInGuild(
 		guild_id : int,
 		name : str,
@@ -164,11 +178,16 @@ class InternalGuildsAPI:
 		data = {'guild_id' : guild_id, 'name' : name, 'permissions' : "{}", 'protected' : int(protected)}
 		return await DatabaseAPI.execute_and_return(InternalGuildsAPI.DATABASE_NAME, query, data)
 
-	async def DoesGuildHaveRankOfId( guild_id : int, rank_id : int ) -> bool:
+	@staticmethod
+	async def DoesGuildHaveRankOfId(
+		guild_id : int,
+		rank_id : int
+	) -> bool:
 		query : str = 'SELECT rank_id FROM ranks WHERE guild_id=:guild_id AND rank_id=:rank_id'
 		data = {'guild_id' : guild_id, 'rank_id' : rank_id}
 		return await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data) is not None
 
+	@staticmethod
 	async def RemoveRankInGuild(
 		guild_id : int,
 		rank_id : int
@@ -190,6 +209,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
+	@staticmethod
 	async def GetGuildRankById(
 		rank_id : int
 	) -> Union[dict, None]:
@@ -197,6 +217,7 @@ class InternalGuildsAPI:
 		data = {'rank_id' : rank_id}
 		return await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 
+	@staticmethod
 	async def SetDefaultRankInGuild(
 		guild_id : int,
 		rank_id : int
@@ -216,7 +237,11 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
-	async def IncrementGuildPlayerCount( guild_id : int, amount : Literal[1, -1] ) -> bool:
+	@staticmethod
+	async def IncrementGuildPlayerCount(
+		guild_id : int,
+		amount : Literal[1, -1]
+	) -> bool:
 		query = 'SELECT total_members FROM master WHERE guild_id=:guild_id'
 		data = {'guild_id' : guild_id}
 		value = await DatabaseAPI.fetch_one( InternalGuildsAPI.DATABASE_NAME, query, data )
@@ -227,6 +252,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
+	@staticmethod
 	async def KickUserIdFromGuild(
 		guild_id : int,
 		target_id : int
@@ -244,6 +270,7 @@ class InternalGuildsAPI:
 		await InternalGuildsAPI.IncrementGuildPlayerCount(guild_id, -1)
 		return True
 
+	@staticmethod
 	async def DeleteGuild(
 		guild_id : int
 	) -> bool:
@@ -267,6 +294,7 @@ class InternalGuildsAPI:
 			await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
+	@staticmethod
 	async def IsUserInGuildOfId(
 		guild_id : int,
 		user_id : int
@@ -276,6 +304,7 @@ class InternalGuildsAPI:
 		result = await DatabaseAPI.fetch_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return result is not None
 
+	@staticmethod
 	async def TransferGuildOwnership(
 		guild_id : int,
 		target_id : int
@@ -300,6 +329,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
+	@staticmethod
 	async def GetGuildBannedUserIds(
 		guild_id : int
 	) -> Union[list, None]:
@@ -311,6 +341,7 @@ class InternalGuildsAPI:
 		except:
 			return []
 
+	@staticmethod
 	async def BanUserIdFromGuild(
 		guild_id : int,
 		target_id : int
@@ -333,6 +364,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
+	@staticmethod
 	async def UnbanUserIdFromGuild(
 		guild_id : int,
 		target_id : int
@@ -354,12 +386,16 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return True
 
-	async def GetGuildChatMessageFromId( message_id : int ) -> Union[dict, None]:
+	@staticmethod
+	async def GetGuildChatMessageFromId(
+		message_id : int
+	) -> Union[dict, None]:
 		query : str = "SELECT id FROM guild_chat WHERE id=:id"
 		data : dict = {"id" : message_id}
 		record : dict = await DatabaseAPI.fetch_one( InternalGuildsAPI.DATABASE_NAME, query, data )
 		return record if record is not None else None
 
+	@staticmethod
 	async def CreateGuildChatMessage(
 		guild_id : int,
 		user_id : int,
@@ -373,6 +409,7 @@ class InternalGuildsAPI:
 			"timestamp" : get_time()
 		})
 
+	@staticmethod
 	async def RemoveGuildChatMessage(
 		guild_id : int,
 		message_id : int
@@ -384,6 +421,7 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one( InternalGuildsAPI.DATABASE_NAME, query, data)
 		return True
 
+	@staticmethod
 	async def GetGuildChatMessages(
 		guild_id : int,
 		offset : int = 0,
@@ -397,6 +435,7 @@ class InternalGuildsAPI:
 		data = {"guild_id" : guild_id}
 		return await DatabaseAPI.fetch_all(query, data)
 
+	@staticmethod
 	async def CreateGuildAuditLog(
 		guild_id : int,
 		user_id : int,
@@ -413,6 +452,7 @@ class InternalGuildsAPI:
 			"args" : json.dumps(args, separators=(",", ":"))
 		})
 
+	@staticmethod
 	async def GetGuildAuditLogs(
 		guild_id : int,
 		offset : int = 0,
@@ -422,16 +462,25 @@ class InternalGuildsAPI:
 		data = {"guild_id" : guild_id}
 		return await DatabaseAPI.fetch_all(query, data)
 
-	async def GetCreatedGuilds(offset : int = 0, limit : int = DEFAULT_GUILD_GET_ALL_LIMIT) -> list[dict]:
+	@staticmethod
+	async def GetCreatedGuilds(
+		offset : int = 0,
+		limit : int = DEFAULT_GUILD_GET_ALL_LIMIT
+	) -> list[dict]:
 		query = f'SELECT * FROM master LIMIT {limit} OFFSET {offset}'
 		return await DatabaseAPI.fetch_all(InternalGuildsAPI.DATABASE_NAME, query, None)
 
-	async def GetCreatedGuildsFull(offset : int = 0, limit : int = DEFAULT_GUILD_GET_ALL_LIMIT) -> list[dict]:
+	@staticmethod
+	async def GetCreatedGuildsFull(
+		offset : int = 0,
+		limit : int = DEFAULT_GUILD_GET_ALL_LIMIT
+	) -> list[dict]:
 		query = f'SELECT guild_id FROM master LIMIT {limit} OFFSET {offset} '
 		values = await DatabaseAPI.fetch_all(InternalGuildsAPI.DATABASE_NAME, query, None)
 		if values is None: return []
 		return [ await InternalGuildsAPI.GetFullGuildInfoFromGuildId( value['guild_id'] ) for value in values if value is not None ]
 
+	@staticmethod
 	async def CreateGuild(
 		user_id : int,
 		name : str,
