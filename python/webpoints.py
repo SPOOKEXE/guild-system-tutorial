@@ -292,6 +292,14 @@ async def IncrementOnlineCount(
 ) -> bool:
 	return await InternalGuildsAPI.IncrementOnlineCount(guild_id, value)
 
+@guilds_api.post('/change-guild-rank-name', summary='ChangeGuildRankName', tags=['guild-core'], dependencies=[Depends(validate_api_key)])
+async def ChangeGuildRankName(
+	guild_id : int = Body(-1, embed=True),
+	rank_id : int = Body(-1, embed=True),
+	name : str = Body(None, embed=True),
+) -> bool:
+	return await InternalGuildsAPI.ChangeGuildRankName(guild_id, rank_id, name)
+
 async def main( host : str = '0.0.0.0', port : int = 5100, api_key : str = None ) -> None:
 	print(f'Setting API_Key to "{api_key}"')
 	await set_api_key(api_key)

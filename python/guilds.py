@@ -548,6 +548,19 @@ class InternalGuildsAPI:
 		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, { 'guild_id' : guild_id, 'total_online' : new_count })
 		return True
 
+	@staticmethod
+	async def ChangeGuildRankName(
+		guild_id : int,
+		rank_id : int,
+		name : str
+	) -> bool:
+		rank_data = await InternalGuildsAPI.GetGuildRankById(rank_id)
+		if rank_data is None: return None
+		if rank_data['guild_id'] != guild_id: return None
+		query : str = 'UPDATE ranks SET name=:name WHERE rank_id=:rank_id guild_id=:guild_id'
+		await DatabaseAPI.execute_one(InternalGuildsAPI.DATABASE_NAME, query, {'guild_id' : guild_id, 'rank_id' : rank_id, 'name' : name})
+		return True
+
 async def test() -> None:
 
 	await InternalGuildsAPI.initialize()

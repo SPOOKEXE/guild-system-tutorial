@@ -200,7 +200,7 @@ function Module.GetGuildMembers( guild_id : number ) : {}?
 	return response and HttpService:JSONDecode(response)
 end
 
-function Module.GetCreatedGuilds( offset : number, limit : number )
+function Module.GetCreatedGuilds( offset : number, limit : number ) : { {} }?
 	local response = RequestAPIAsync('/get-created-guilds', 'POST', {offset=offset, limit=limit})
 	return response and HttpService:JSONDecode(response)
 end
@@ -210,7 +210,7 @@ function Module.DoesGuildHaveRankOfId( guild_id : number, rank_id : number ) : b
 	return response and HttpService:JSONDecode(response)
 end
 
-function Module.GetCreatedGuildsFull( offset : number, limit : number )
+function Module.GetCreatedGuildsFull( offset : number, limit : number ) : { {} }?
 	local response = RequestAPIAsync('/get-created-guilds-full', 'POST', {offset=offset, limit=limit})
 	return response and HttpService:JSONDecode(response)
 end
@@ -220,9 +220,14 @@ function Module.CreateGuild( user_id : number, name : string, description : stri
 	return response and HttpService:JSONDecode(response)
 end
 
-function Module.IncrementOnlineCount( guild_id : number, value : number )
+function Module.IncrementOnlineCount( guild_id : number, value : number ) : boolean
 	assert( value == 1 or value == -1, 'You must set the increment to -1 or 1.' )
 	local response = RequestAPIAsync('/increment-online-count', 'POST', {guild_id=guild_id, value=value})
+	return response and HttpService:JSONDecode(response)
+end
+
+function Module.ChangeGuildRankName( guild_id : number, rank_id : number, name : string ) : boolean?
+	local response = RequestAPIAsync('/change-guild-rank-name', 'POST', {guild_id=guild_id, rank_id=rank_id, name=name})
 	return response and HttpService:JSONDecode(response)
 end
 
