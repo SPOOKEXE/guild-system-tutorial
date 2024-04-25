@@ -45,6 +45,7 @@ if RunService:IsServer() then
 		end
 
 		-- send to target list of player or all players
+		-- print(category, data, playerList)
 		if playerList then
 			for _, LocalPlayer in ipairs( playerList ) do
 				Bridge:FireClient( LocalPlayer, RemoteEnums.Set, category, data )
@@ -173,7 +174,7 @@ if RunService:IsServer() then
 			if Debounce[LocalPlayer.Name] and time() < Debounce[LocalPlayer.Name] then
 				return
 			end
-			Debounce[LocalPlayer.Name] = time() + 2
+			Debounce[LocalPlayer.Name] = time() + 1
 
 			-- print(LocalPlayer.Name, 'requested for update')
 			Update( LocalPlayer )
@@ -219,6 +220,7 @@ else
 	function Module.Init(_)
 
 		Bridge:OnClientEvent(function(Job, category, data)
+			-- print(Job, category, data)
 			if Job == RemoteEnums.Set then
 				local DoesExist = (Module.Replicated[category] ~= nil)
 				if DoesExist then
@@ -241,12 +243,15 @@ else
 	end
 
 	function Module.Start()
-		-- keep requesting until data is available
-		while not Module.GetData('PlayerData') do
-			print('requesting data from server')
-			Bridge:FireServer()
-			task.wait(2)
-		end
+
+		task.spawn(function()
+			-- keep requesting until data is available
+			while not Module.GetData('PlayerData') do
+				Bridge:FireServer()
+				task.wait(2)
+			end
+		end)
+
 	end
 
 end

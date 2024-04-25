@@ -9,4 +9,5 @@ require(LocalPlayer:WaitForChild('PlayerScripts'):WaitForChild('Modules'))
 require(LocalPlayer:WaitForChild('PlayerScripts'):WaitForChild('Core'))
 
 local Data = require(ReplicatedStorage:WaitForChild('Framework'))
+Data.Init()
 Data.Start()

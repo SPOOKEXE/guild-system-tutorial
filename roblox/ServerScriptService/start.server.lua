@@ -5,4 +5,5 @@ require(ServerStorage:WaitForChild('Modules'))
 require(ServerStorage:WaitForChild('Core'))
 
 local Data = require(ReplicatedStorage:WaitForChild('Framework'))
+Data.Init()
 Data.Start()
