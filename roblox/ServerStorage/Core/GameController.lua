@@ -1,3 +1,5 @@
+local HttpService = game:GetService("HttpService")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,12 +19,12 @@ function Module.OnPlayerAdded( LocalPlayer : Player )
 	end
 
 	local guildInfo = SystemsContainer.GuildsServer.GetGuildInfoFromUserId( LocalPlayer.UserId )
+	print(HttpService:JSONEncode(guildInfo))
 	if guildInfo then
 		profile.Data.GuildUUID = guildInfo['guild_id']
+		ReplicatedData.SetData('GuildData', guildInfo, {LocalPlayer})
 	end
-	print(guildInfo)
 	ReplicatedData.SetData('PlayerData', profile.Data, {LocalPlayer})
-	ReplicatedData.SetData('GuildData', guildInfo, {LocalPlayer})
 end
 
 function Module.OnPlayerRemoving(LocalPlayer)
